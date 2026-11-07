@@ -15,7 +15,6 @@ import {
     annualInspections,
     assessments,
     buildingPermits,
-    businesses,
     electricalPermits,
     inspections,
 } from "./constants/registers";
@@ -75,7 +74,6 @@ const router = createBrowserRouter([
                 errorElement: <ErrorPage />,
                 children: [
                     { index: true, lazy: page(() => import("./pages/Dashboard")) },
-                    standardRegister(businesses),
                     standardRegister(annualInspections),
                     { path: aifLogbook.path, children: [list(aifLogbook)] },
                     standardRegister(buildingPermits),

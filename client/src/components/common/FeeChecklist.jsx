@@ -3,7 +3,7 @@ import { checklistFees, itemAmount, LOAD_DEFAULTS, needsQuantity, toKva } from "
 import { formatPeso } from "../../../utils/format";
 
 const matches = (item, words) =>
-    words.every((word) => `${item.label} ${item.ref}`.toLowerCase().includes(word));
+    words.every((word) => `${item.label} ${item.ref} ${item.keywords || ""}`.toLowerCase().includes(word));
 
 const NumberBox = ({ label, unit, data, value, onChange, width, ...props }) => (
     <label className="fee-row-quantity">

@@ -1,3 +1,4 @@
+import { newKey } from "../../utils/newKey";
 import { PiCalculator, PiCheck, PiPlus } from "react-icons/pi";
 import { useEffect, useMemo, useState } from "react";
 import { Form, Link, redirect, useActionData, useLoaderData, useNavigation } from "react-router-dom";
@@ -38,7 +39,7 @@ export const action = async ({ request, params }) => {
 };
 
 const newLine = (fee = {}) => ({
-    key: crypto.randomUUID(),
+    key: newKey(),
     category: fee.category || FEE_CATEGORIES.OTHERS,
     reference: fee.reference ?? "",
     description: fee.description ?? "",

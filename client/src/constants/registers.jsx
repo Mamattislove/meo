@@ -123,58 +123,6 @@ const applicationStatus = (row) => <Status value={row.onHold ? "on hold" : row.s
 
 const coordinate = (name) => ({ name, label: "Location", span: 6, type: "coordinate" });
 
-export const businesses = {
-    title: "Businesses",
-    singular: "business",
-    plural: "businesses",
-    api: "/businesses",
-    path: "businesses",
-    searchHint: "Business or owner",
-    heading: (record) => record.businessName,
-    columns: [
-        { label: "Business", render: (row) => row.businessName },
-        { label: "Owner", render: (row) => row.businessOwner, hideOnPhone: true },
-        { label: "Contact no.", render: (row) => row.ownerContact, hideOnPhone: true },
-        { label: "Barangay", render: (row) => row.barangay },
-    ],
-    filters: [filter("barangay", "Barangay", BARANGAYS)],
-    boxes: [
-        {
-            title: "Business",
-            fields: [
-                text("businessName", "Business name", 4, { required: true }),
-                choice("barangay", "Barangay", BARANGAYS, 2),
-                coordinate("businessCoordinate"),
-            ],
-        },
-        {
-            title: "Owner",
-            fields: [
-                text("businessOwner", "Owner's name", 2),
-                text("ownerAddress", "Address", 2),
-                text("ownerContact", "Contact no.", 2),
-            ],
-        },
-    ],
-    related: (id) => [
-        {
-            title: "AIF applications",
-            api: "/annual-inspections",
-            plural: "annualInspections",
-            path: "aif-applications",
-            params: { business: id },
-            columns: [
-                { label: "Year", render: (row) => row.year },
-                { label: "Status", render: applicationStatus },
-                serialColumn,
-                { label: "Received", render: (row) => formatDate(row.dateReceived) },
-            ],
-            newLabel: "New application",
-            newLink: `/dashboard/aif-applications/new?business=${id}`,
-        },
-    ],
-};
-
 // The business part of an AIF application: its form and its page show these together
 const AIF_BUSINESS_FIELDS = [
     text("businessOwner", "Owner's name", 2),

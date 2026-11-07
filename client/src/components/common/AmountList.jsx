@@ -1,7 +1,8 @@
+import { newKey } from "../../../utils/newKey";
 import { useState } from "react";
 import { PiPlus } from "react-icons/pi";
 
-const newRow = (value = "") => ({ key: crypto.randomUUID(), value });
+const newRow = (value = "") => ({ key: newKey(), value });
 
 // One box per thing found on site, for when there can be several of different sizes.
 const AmountList = ({ name, rowLabel, unit, addLabel, initial = [], showTotal = false }) => {

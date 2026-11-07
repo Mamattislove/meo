@@ -23,6 +23,13 @@ const machinerySchema = new mongoose.Schema(
         machineName: String, // an optional description
         imageUrl: String,
         capacity: { type: Number, min: 0 }, // the size the fee is charged on, in the item's unit
+        // Air conditioning entered in HP; capacity is then the tons worked out from these
+        acUnits: [
+            new mongoose.Schema(
+                { hp: { type: Number, min: 0 }, quantity: { type: Number, min: 1 } },
+                { _id: false },
+            ),
+        ],
         quantity: { type: Number, min: 1 },
     },
     { _id: false },

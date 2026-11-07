@@ -262,7 +262,7 @@ const TONS = [[100, 25], [150, 20], [300, 15], [500, 10], [Infinity, 5]];
 export const ANNUAL_MECHANICAL = [
     cumulative("11f-i", "Sec. 11.f.i", "Refrigeration and ice plant", "tons", TONS, FRACTION),
     rate("11f-ii", "Sec. 11.f.ii", "Window type air conditioners", 40, "units"),
-    cumulative("11f-iii", "Sec. 11.f.iii", "Packaged or centralized air conditioning", "tons", TONS, FRACTION),
+    cumulative("11f-iii", "Sec. 11.f.iii", "Packaged or centralized air conditioning", "tons", TONS, { ...FRACTION, entersHp: true, keywords: "split type aircon acu" }),
     {
         ...stepped("11f-iv", "Sec. 11.f.iv", "Mechanical ventilation, kW per unit", "kW", [{ over: 0, base: 10, rate: 0 }, { over: 1, base: 50, rate: 0 }, { over: 7.5, base: 50, rate: 20 }], { ...PER_UNIT, fraction: true }),
     },
@@ -383,6 +383,21 @@ export const machineSize = (item, machine) => {
     const value = machineValue(item, machine);
     return value ? `${value} ${item.unit}` : "";
 };
+
+// Air conditioning sized in HP, the way split type units are sold. The schedule's figures
+// for evaluating air conditioning (Sec. 5.a) give kW per ton by the size of the compressor.
+const KW_PER_HP = 0.746;
+const KW_PER_TON = [[5, 0.9], [50, 0.8], [Infinity, 0.7]];
+const hpToTons = (hp) => {
+    const kw = hp * KW_PER_HP;
+    for (const [upTo, kwPerTon] of KW_PER_TON) {
+        if (kw / kwPerTon <= upTo) return kw / kwPerTon;
+    }
+    return 0;
+};
+export const acUnitTons = (units) =>
+    round2(units.reduce((sum, { hp, quantity }) => sum + hpToTons(Number(hp)) * (Number(quantity) || 1), 0));
+export const acUnitsText = (units) => units.map(({ hp, quantity }) => `${quantity || 1} × ${hp} HP`).join(", ");
 
 export const needsQuantity = (item) => item.kind !== "flat" && item.kind !== "percentOf";
 

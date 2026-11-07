@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
 import customFetch from "../../../utils/customFetch";
 import FieldCell from "./FieldCell";
 import FormBox from "../wrappers/FormBox";
@@ -9,12 +8,11 @@ const THIS_YEAR_FIELDS = ["occupancyDivision", "businessActivity", "lessorName"]
 const startingValues = (record) =>
     record ? { ...record.business, ...Object.fromEntries(THIS_YEAR_FIELDS.map((name) => [name, record[name]])) } : {};
 
-// The business part of an AIF application. Typing a name offers existing businesses;
-// picking one fills in its details and last year's, and a new name creates a business
+// The business part of an AIF application, the only place the office enters these details:
+// the BPLO manages businesses, not Engineering. Typing a name offers ones from earlier
+// applications; picking one fills in its details and last year's, and a new name is added
 // when the application is saved. Other fields remount when picked, to take the new values.
 const BusinessFields = ({ record, fields }) => {
-    const [searchParams] = useSearchParams();
-    const fromLink = searchParams.get("business");
     const [values, setValues] = useState(() => startingValues(record));
     const [name, setName] = useState(record?.business?.businessName || "");
     const [pickedId, setPickedId] = useState("");
@@ -34,12 +32,6 @@ const BusinessFields = ({ record, fields }) => {
         setVersion((current) => current + 1);
     };
 
-    // Reached from a business's page
-    useEffect(() => {
-        if (!fromLink || record) return;
-        customFetch.get(`/businesses/${fromLink}`).then(({ data }) => pick(data.business));
-    }, [fromLink, record]);
-
     useEffect(() => {
         if (record || pickedId || !name.trim()) return undefined;
         let ignore = false;
@@ -58,10 +50,10 @@ const BusinessFields = ({ record, fields }) => {
     }, [name, pickedId, record]);
 
     const hint = record
-        ? "Changes to the name, owner, contact or location update the business for every year."
+        ? "Changes to the name, owner, contact or location also apply to this business's other years."
         : pickedId
-          ? "Existing business. Its details are filled in, and any change here updates it."
-          : "Pick an existing business to fill in its details, or type a new name to add it.";
+          ? "From an earlier application. Its details are filled in, and any change here also applies to its other years."
+          : "For a renewal, pick the name from the suggestions to fill in last year's details.";
 
     return (
         <FormBox title="Business">

@@ -202,6 +202,14 @@ export const uploadInspectionFiles = (req, res, next) => {
         if (itemIds.length) {
             const machineNames = toArray(req.body.machineNames);
             const oldIndexes = toArray(req.body.machineryOldIndexes);
+            const acUnits = toArray(req.body.machineryAcUnits);
+            const parsedAcUnits = (i) => {
+                try {
+                    return acUnits[i] ? JSON.parse(acUnits[i]) : undefined;
+                } catch {
+                    return undefined;
+                }
+            };
             const machineryImageUrls = urlsOf("machineryImages");
             const capacities = toArray(req.body.machineryCapacities);
             const quantities = toArray(req.body.machineryQuantities);
@@ -215,11 +223,12 @@ export const uploadInspectionFiles = (req, res, next) => {
                 machineName: machineNames[i] || undefined,
                 imageUrl: imageUrlFor(i),
                 oldIndex: oldIndexes[i] || undefined,
+                acUnits: parsedAcUnits(i),
                 capacity: capacities[i] === "" ? undefined : capacities[i],
                 quantity: quantities[i] || undefined,
             }));
         }
-        for (const key of ["machineryItems", "machineNames", "machineryCapacities", "machineryQuantities", "machineryImageIndexes", "machineryOldIndexes"]) {
+        for (const key of ["machineryItems", "machineNames", "machineryCapacities", "machineryQuantities", "machineryImageIndexes", "machineryOldIndexes", "machineryAcUnits"]) {
             delete req.body[key];
         }
         next();

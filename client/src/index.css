@@ -534,6 +534,19 @@
         gap: 8px 12px;
         padding-bottom: 10px;
     }
+    .hp-entry {
+        display: flex;
+        flex: 1 1 100%;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+    }
+    .hp-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px 12px;
+    }
     .machine-entry-name {
         flex: 1 1 200px;
         width: auto;

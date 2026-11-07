@@ -12,7 +12,7 @@ import {
     FEE_CATEGORIES,
     SCOPES_OF_WORK,
 } from "./constants.js";
-import { ANNUAL_MECHANICAL, ELECTRICAL, ELECTRONICS, itemAmount, machineSize, machineValue, SIGN_RENEWALS, totalFloorArea } from "./feeSchedule.js";
+import { acUnitsText, ANNUAL_MECHANICAL, ELECTRICAL, ELECTRONICS, itemAmount, machineSize, machineValue, SIGN_RENEWALS, totalFloorArea } from "./feeSchedule.js";
 
 const round2 = (n) => Math.round(n * 100) / 100;
 
@@ -253,7 +253,7 @@ const mechanicalFees = (machineries = []) => {
         }
         const quantity = machine.quantity || 1;
         fees.push(fee(FEE_CATEGORIES.MECHANICAL, item.ref,
-            `${item.label}${name}, ${machineSize(item, machine)}${item.perUnit ? ` × ${quantity}` : ""}`,
+            `${item.label}${name}, ${machineSize(item, machine)}${machine.acUnits?.length ? ` (${acUnitsText(machine.acUnits)})` : ""}${item.perUnit ? ` × ${quantity}` : ""}`,
             itemAmount(item, value, quantity), {
                 itemId: item.id,
                 basis: value,

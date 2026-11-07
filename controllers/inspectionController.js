@@ -13,7 +13,7 @@ import {
     INSPECTION_STATUSES as STATUS,
     INSPECTION_TYPES,
 } from "../utils/constants.js";
-import { toKva } from "../utils/feeSchedule.js";
+import { acUnitTons, toKva } from "../utils/feeSchedule.js";
 import { fileUrlsOf } from "../utils/inspectionRecords.js";
 import { listRecords } from "../utils/listRecords.js";
 
@@ -60,6 +60,12 @@ const requireDatesUnchanged = (inspection, body) => {
     }
 };
 
+// Air conditioning entered in HP: the tons always follow from it
+const applyAcUnits = (machineries) =>
+    machineries?.map((machine) =>
+        machine.acUnits?.length ? { ...machine, capacity: acUnitTons(machine.acUnits) } : machine,
+    );
+
 // A connected load given as kW or a breaker size: the kVA always follows from it
 const applyConnectedLoad = (data) => {
     if (!("connectedLoadConversion" in data)) return;
@@ -97,6 +103,7 @@ export const getAllInspections = async (req, res) => {
 export const createInspection = async (req, res) => {
     const { markInspected, ...data } = validatedBody(req);
     applyConnectedLoad(data);
+    if (data.machineries) data.machineries = applyAcUnits(data.machineries);
     const inspection = new Inspection({
         ...data,
         images: uploadedUrls(req, "images"),
@@ -131,7 +138,7 @@ export const updateInspection = async (req, res) => {
 
     if (data.machineries) {
         const oldMachineries = inspection.machineries;
-        data.machineries = data.machineries.map(({ oldIndex, ...machine }) => ({
+        data.machineries = applyAcUnits(data.machineries).map(({ oldIndex, ...machine }) => ({
             ...machine,
             imageUrl: machine.imageUrl || oldMachineries[oldIndex]?.imageUrl,
         }));

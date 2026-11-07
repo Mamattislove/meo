@@ -5,8 +5,8 @@ import { FieldCell, FormBox, FormError } from "../components";
 import customFetch from "../../utils/customFetch";
 import { errorMessage, pickerLabel, toPayload } from "../../utils/format";
 
-// Reference fields can be pre-chosen from the URL, e.g. ?business=<id> from a
-// business's page, so the clerk doesn't have to search for it again.
+// Reference fields can be pre-chosen from the URL when reached from a related
+// record's page, so the clerk doesn't have to search for it again.
 export const makeLoader = (register) => async ({ request, params }) => {
     const id = params.id;
     if (id) {

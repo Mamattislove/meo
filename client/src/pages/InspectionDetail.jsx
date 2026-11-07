@@ -3,7 +3,7 @@ import { Form, Link, redirect, useActionData, useLoaderData, useNavigation, useR
 import { toast } from "react-toastify";
 import { ConfirmDelete, FormBox, FormError, InputField, RecordPicker, Status, ValueCell } from "../components";
 import { RECORD_TYPES } from "../constants/registers";
-import { ANNUAL_MECHANICAL, conversionText, ELECTRONICS, machineSize, SIGN_RENEWALS, totalFloorArea } from "../../../utils/feeSchedule.js";
+import { acUnitsText, ANNUAL_MECHANICAL, conversionText, ELECTRONICS, machineSize, SIGN_RENEWALS, totalFloorArea } from "../../../utils/feeSchedule.js";
 import customFetch from "../../utils/customFetch";
 import { errorMessage, formatDate, formatTime, inspectionName, recordName } from "../../utils/format";
 
@@ -243,7 +243,10 @@ const InspectionDetail = () => {
                                             <span className="fee-row-ref">{item.ref}</span>
                                         </td>
                                         <td>{machine.machineName}</td>
-                                        <td className="num">{machineSize(item, machine)}</td>
+                                        <td className="num">
+                                            {machineSize(item, machine)}
+                                            {machine.acUnits?.length > 0 && <span className="fee-row-ref">{acUnitsText(machine.acUnits)}</span>}
+                                        </td>
                                         <td className="num">{item.perUnit && machine.quantity}</td>
                                         <td>
                                             {machine.imageUrl && (

@@ -1,4 +1,4 @@
-import { PiBookOpenText, PiBuildings, PiClipboardText, PiClock, PiFileText, PiFiles, PiHourglassMedium, PiLightning, PiMoney, PiPause, PiPlus, PiStorefront, PiWarningCircle } from "react-icons/pi";
+import { PiBookOpenText, PiBuildings, PiClipboardText, PiClock, PiFileText, PiFiles, PiHourglassMedium, PiLightning, PiMoney, PiPause, PiPlus, PiWarningCircle } from "react-icons/pi";
 import { Link, useLoaderData } from "react-router-dom";
 import { Ledger } from "../components";
 import { assessments, buildingPermits, inspections } from "../constants/registers";
@@ -6,7 +6,6 @@ import customFetch from "../../utils/customFetch";
 import { formatPeso, longDate } from "../../utils/format";
 
 const TALLIES = [
-    { api: "/businesses", label: "Businesses", one: "Business", path: "businesses", icon: PiStorefront },
     { api: "/annual-inspections/applications", label: "Open AIF applications", one: "AIF application", path: "aif-applications", icon: PiFileText },
     { api: "/annual-inspections/logbook", label: "AIF logbook entries", path: "annual-inspections", icon: PiBookOpenText },
     { api: "/building-permits", label: "Building permits", one: "Building permit", path: "building-permits", icon: PiBuildings },

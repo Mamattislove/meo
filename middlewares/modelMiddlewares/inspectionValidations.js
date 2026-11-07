@@ -101,6 +101,8 @@ const inspectionFields = () => [
         .withMessage("invalid mechanical item"),
     body("machineries.*.oldIndex").optional(BLANK_OK).isInt({ min: 0 }).withMessage("invalid machinery row").toInt(),
     numberField("machineries.*.capacity"),
+    body("machineries.*.acUnits.*.hp").isFloat({ gt: 0 }).withMessage("each aircon's HP must be more than 0").toFloat(),
+    body("machineries.*.acUnits.*.quantity").isInt({ min: 1 }).withMessage("each aircon's number of units must be 1 or more").toInt(),
     body("machineries.*.quantity")
         .optional(BLANK_OK)
         .isInt({ min: 1 })

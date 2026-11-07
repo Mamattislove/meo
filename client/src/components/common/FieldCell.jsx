@@ -1,6 +1,7 @@
 import { PiCrosshairSimple } from "react-icons/pi";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import RecordPicker from "./RecordPicker";
+import { OFFICE_TOWN } from "../../../../utils/constants.js";
 import { findBarangay } from "../../../utils/barangayLookup";
 import { dateInputValue, formatDate, formatPeso, sentence } from "../../../utils/format";
 
@@ -34,28 +35,25 @@ const CoordinateInput = ({ name, value }) => {
     const filledBarangay = useRef("");
     const [fromMap, setFromMap] = useState(null);
 
-    // On a form with a barangay box, a new point suggests the barangay. It never replaces
-    // one the clerk chose, and a saved point isn't looked up again. The pause is longer
-    // than the map's because the public lookup service allows one request a second.
+    // On a form with a barangay box, a new point fills in the barangay from the LGU's
+    // boundaries. It never replaces one the clerk chose, and a saved point is left alone.
     useEffect(() => {
         const box = hiddenInput.current?.form?.elements.barangay;
         const point = `${shown.latitude},${shown.longitude}`;
         if (!box || point === savedPoint.current) return undefined;
         setFromMap(null);
         if (shown.latitude === "" || shown.longitude === "") return undefined;
-        const controller = new AbortController();
-        const timer = setTimeout(async () => {
-            const found = await findBarangay(shown.latitude, shown.longitude, controller.signal);
-            if (controller.signal.aborted || !found) return;
-            if (found.barangay && (box.value === "" || box.value === filledBarangay.current)) {
-                box.value = found.barangay;
-                filledBarangay.current = found.barangay;
+        let ignore = false;
+        findBarangay(shown.latitude, shown.longitude).then((barangay) => {
+            if (ignore) return;
+            if (barangay && (box.value === "" || box.value === filledBarangay.current)) {
+                box.value = barangay;
+                filledBarangay.current = barangay;
             }
-            setFromMap(found);
-        }, 1000);
+            setFromMap({ barangay });
+        });
         return () => {
-            clearTimeout(timer);
-            controller.abort();
+            ignore = true;
         };
     }, [shown.latitude, shown.longitude]);
 
@@ -112,10 +110,13 @@ const CoordinateInput = ({ name, value }) => {
                     value={longitude}
                     onChange={(event) => setLongitude(event.target.value)}
                 />
-                <button type="button" onClick={useMyLocation} className="text-link shrink-0 cursor-pointer text-[13px]">
-                    <PiCrosshairSimple className="mr-1 inline size-4 align-[-3px]" />
-                    Use my location
-                </button>
+                {/* Browsers only share a location over https or on the computer itself */}
+                {window.isSecureContext && navigator.geolocation && (
+                    <button type="button" onClick={useMyLocation} className="text-link shrink-0 cursor-pointer text-[13px]">
+                        <PiCrosshairSimple className="mr-1 inline size-4 align-[-3px]" />
+                        Use my location
+                    </button>
+                )}
                 {(latitude !== "" || longitude !== "") && (
                     <button type="button" onClick={() => pick("", "")} className="text-link shrink-0 cursor-pointer text-[13px]">
                         Clear
@@ -129,10 +130,8 @@ const CoordinateInput = ({ name, value }) => {
             {fromMap && (
                 <span className="cell-hint" data-barangay-hint>
                     {fromMap.barangay
-                        ? `The map shows this point in ${fromMap.barangay}. Please check the barangay; the map's data isn't always exact.`
-                        : fromMap.town
-                          ? `The map shows this point in ${fromMap.town}, outside the town. Please check the location.`
-                          : "The map can't tell the barangay here, so please choose it."}
+                        ? `The barangay boundary map puts this point in ${fromMap.barangay}.`
+                        : `This point is outside ${OFFICE_TOWN}'s barangay boundaries. Please check the location.`}
                 </span>
             )}
         </>

@@ -1,3 +1,4 @@
+import { newKey } from "../../../utils/newKey";
 import { useState } from "react";
 import { PiPlus } from "react-icons/pi";
 
@@ -15,7 +16,7 @@ const USES = [
 // Sec. 9.h.iii item ids end in display then use: 9h-iii-nb is a neon business sign
 const newRow = (sign = {}) => {
     const code = sign.itemId?.split("-").at(-1) || "nb";
-    return { key: crypto.randomUUID(), display: code[0], use: code[1], area: sign.area ?? "" };
+    return { key: newKey(), display: code[0], use: code[1], area: sign.area ?? "" };
 };
 
 // Each sign found on site, charged on its own display surface and type (Sec. 9.h.iii).

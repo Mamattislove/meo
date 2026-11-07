@@ -1,6 +1,7 @@
+import { newKey } from "../../../utils/newKey";
 import { useState } from "react";
 import { PiPlus } from "react-icons/pi";
-import { INSPECTION_MECHANICAL, isCounted } from "../../../../utils/feeSchedule.js";
+import { acUnitTons, INSPECTION_MECHANICAL, isCounted } from "../../../../utils/feeSchedule.js";
 
 const GROUPS = [
     ["Refrigeration, air conditioning and ventilation", ["11f-i", "11f-ii", "11f-iii", "11f-iv"]],
@@ -18,7 +19,7 @@ const GROUPS = [
 const ORDER = GROUPS.flatMap(({ items }) => items.map(({ id }) => id));
 
 const blankRow = (item) => ({
-    key: crypto.randomUUID(),
+    key: newKey(),
     itemId: item.id,
     capacity: "",
     quantity: isCounted(item) ? "" : 1,
@@ -32,6 +33,54 @@ const NumberBox = ({ name, unit, label, ...props }) => (
     </label>
 );
 
+// Tons, or each unit's HP for the app to work the tons out from.
+const HpEntry = ({ item, row }) => {
+    const [units, setUnits] = useState(() => (row.acUnits || []).map((unit) => ({ ...unit, key: newKey() })));
+    const [tons, setTons] = useState(row.capacity ?? "");
+    const complete = units.filter(({ hp, quantity }) => Number(hp) > 0 && Number(quantity) >= 1);
+    const update = (key, values) =>
+        setUnits((current) => current.map((unit) => (unit.key === key ? { ...unit, ...values } : unit)));
+
+    return (
+        <div className="hp-entry">
+            <NumberBox
+                name="machineryCapacities"
+                unit="tons"
+                label={`${item.label}: tons`}
+                value={complete.length ? acUnitTons(complete) : tons}
+                readOnly={complete.length > 0}
+                onChange={(event) => setTons(event.target.value)}
+            />
+            <input
+                type="hidden"
+                name="machineryAcUnits"
+                value={complete.length ? JSON.stringify(complete.map(({ hp, quantity }) => ({ hp: Number(hp), quantity: Number(quantity) }))) : ""}
+            />
+            {units.map((unit, index) => (
+                <div key={unit.key} className="hp-row" data-hp-row>
+                    <NumberBox unit="HP" label={`Aircon ${index + 1} in HP`} value={unit.hp} onChange={(event) => update(unit.key, { hp: event.target.value })} />
+                    <NumberBox unit="units" label={`Aircon ${index + 1} number of units`} min="1" step="1" value={unit.quantity} onChange={(event) => update(unit.key, { quantity: event.target.value })} />
+                    <button
+                        type="button"
+                        className="text-link cursor-pointer text-sm"
+                        onClick={() => setUnits((current) => current.filter((other) => other.key !== unit.key))}
+                    >
+                        Remove
+                    </button>
+                </div>
+            ))}
+            <button
+                type="button"
+                className="text-link back-link cursor-pointer text-sm"
+                onClick={() => setUnits((current) => [...current, { key: newKey(), hp: "", quantity: 1 }])}
+            >
+                <PiPlus />
+                {units.length ? "Add another size" : "Enter split type units by HP"}
+            </button>
+        </div>
+    );
+};
+
 // One machine or set of machines. Every list the server reads gets a value for each
 // row, hidden where the item doesn't ask for it, so the lists stay lined up.
 const Entry = ({ item, row, index, canRemove, onRemove }) => {
@@ -40,12 +89,20 @@ const Entry = ({ item, row, index, canRemove, onRemove }) => {
         <div className="machine-entry">
             <input type="hidden" name="machineryItems" value={item.id} />
             <input type="hidden" name="machineryOldIndexes" value={row.oldIndex ?? ""} />
-            {isCounted(item) ? (
+            {!item.entersHp && <input type="hidden" name="machineryAcUnits" value="" />}
+            {item.entersHp && (
+                <>
+                    <HpEntry item={item} row={row} />
+                    <input type="hidden" name="machineryQuantities" value="1" />
+                </>
+            )}
+            {!item.entersHp && isCounted(item) && (
                 <>
                     <input type="hidden" name="machineryCapacities" value="" />
                     <NumberBox name="machineryQuantities" unit={item.unit} label={`${item.label}: ${item.unit}`} min="1" step="1" defaultValue={row.quantity ?? ""} />
                 </>
-            ) : (
+            )}
+            {!item.entersHp && !isCounted(item) && (
                 <>
                     <NumberBox name="machineryCapacities" unit={item.unit} label={`${item.label}: ${item.unit}`} defaultValue={row.capacity ?? ""} />
                     {item.perUnit ? (
@@ -87,7 +144,7 @@ const Group = ({ group, rows, words, renderRows, onToggle, onAdd }) => {
     const ticked = group.items.filter((item) => rows.some((row) => row.itemId === item.id));
     const [isOpen, setIsOpen] = useState(ticked.length > 0);
     const searching = words.length > 0;
-    const matches = (item) => words.every((word) => `${item.label} ${item.ref}`.toLowerCase().includes(word));
+    const matches = (item) => words.every((word) => `${item.label} ${item.ref} ${item.keywords || ""}`.toLowerCase().includes(word));
 
     return (
         <details
@@ -137,7 +194,7 @@ const Group = ({ group, rows, words, renderRows, onToggle, onAdd }) => {
 // what's on site and enters what the fee is charged on, in that item's own unit.
 const MachineryChecklist = ({ machineries = [] }) => {
     const [rows, setRows] = useState(() =>
-        machineries.map((machine, oldIndex) => ({ ...machine, key: crypto.randomUUID(), oldIndex })),
+        machineries.map((machine, oldIndex) => ({ ...machine, key: newKey(), oldIndex })),
     );
     const [search, setSearch] = useState("");
     const words = search.trim().toLowerCase().split(/\s+/).filter(Boolean);
