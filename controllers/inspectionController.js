@@ -73,12 +73,30 @@ const applyConnectedLoad = (data) => {
     else data.connectedLoadConversion = undefined;
 };
 
+// The inspector confirms the occupancy division and line of business on site. They belong
+// to the year's AIF application, which the fee is computed from. Returned unsaved, so
+// nothing changes if the inspection can't be saved.
+const applyApplicationDetails = async (inspection, details) => {
+    if (inspection.inspectionType !== INSPECTION_TYPES.BUSINESS || !inspection.record) return null;
+    const application = await AnnualInspection.findById(inspection.record);
+    const changes = Object.entries(details).filter(([field, value]) => value !== undefined && value !== application[field]);
+    if (changes.length && application.status === ANNUAL_INSPECTION_STATUSES.PAID) {
+        throw new BadRequestError("this application is already paid, so its occupancy can't change");
+    }
+    for (const [field, value] of changes) application.set(field, value);
+    return application;
+};
+
 // The inspector has been: note who and when, if not already given.
-const finishInspection = (inspection, userId) => {
+const finishInspection = (inspection, userId, application) => {
     // Every business is checked for a name signage (an inspection with no application
     // yet is refused by the model, with its own message)
     if (inspection.inspectionType === INSPECTION_TYPES.BUSINESS && inspection.record && typeof inspection.hasNameSignage !== "boolean") {
         throw new BadRequestError("answer whether it has a signage with the business name");
+    }
+    // The area fee depends on it
+    if (application && !application.occupancyDivision) {
+        throw new BadRequestError("set the occupancy division");
     }
     inspection.status = STATUS.INSPECTED;
     if (!inspection.inspectedBy) inspection.inspectedBy = userId;
@@ -101,7 +119,7 @@ export const getAllInspections = async (req, res) => {
 };
 
 export const createInspection = async (req, res) => {
-    const { markInspected, ...data } = validatedBody(req);
+    const { markInspected, occupancyDivision, businessActivity, ...data } = validatedBody(req);
     applyConnectedLoad(data);
     if (data.machineries) data.machineries = applyAcUnits(data.machineries);
     const inspection = new Inspection({
@@ -110,8 +128,10 @@ export const createInspection = async (req, res) => {
         videos: uploadedUrls(req, "videos"),
         createdBy: req.user.userId,
     });
-    if (markInspected) finishInspection(inspection, req.user.userId);
+    const application = await applyApplicationDetails(inspection, { occupancyDivision, businessActivity });
+    if (markInspected) finishInspection(inspection, req.user.userId, application);
     await inspection.save();
+    if (application?.isModified()) await application.save();
     await syncCase(inspection);
     res.status(StatusCodes.CREATED).json({ inspection });
 };
@@ -131,7 +151,7 @@ export const updateInspection = async (req, res) => {
     }
     const body = validatedBody(req);
     requireDatesUnchanged(inspection, body);
-    const { removeFiles = [], markInspected, ...data } = body;
+    const { removeFiles = [], markInspected, occupancyDivision, businessActivity, ...data } = body;
     applyConnectedLoad(data);
     const oldUrls = fileUrlsOf(inspection);
     const isKept = (url) => !removeFiles.includes(url);
@@ -146,8 +166,9 @@ export const updateInspection = async (req, res) => {
     for (const [field, value] of Object.entries(data)) {
         inspection.set(field, value);
     }
+    const application = await applyApplicationDetails(inspection, { occupancyDivision, businessActivity });
     if (markInspected && inspection.status === STATUS.PENDING) {
-        finishInspection(inspection, req.user.userId);
+        finishInspection(inspection, req.user.userId, application);
     }
     inspection.images = [
         ...inspection.images.filter(isKept),
@@ -158,6 +179,7 @@ export const updateInspection = async (req, res) => {
         ...uploadedUrls(req, "videos"),
     ];
     await inspection.save();
+    if (application?.isModified()) await application.save();
     await syncCase(inspection);
 
     const newUrls = fileUrlsOf(inspection);

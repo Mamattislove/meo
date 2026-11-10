@@ -4,14 +4,17 @@ import { NotFoundError } from "../../errors/customErrors.js";
 import Business from "../../models/Business.js";
 import Inspection from "../../models/Inspection.js";
 import {
+    BUSINESS_ACTIVITIES,
     INSPECTION_STATUSES,
     INSPECTION_TYPES,
+    OCCUPANCY_DIVISIONS,
 } from "../../utils/constants.js";
 import { ELECTRONICS, INSPECTION_MECHANICAL, SIGN_RENEWALS, toKva } from "../../utils/feeSchedule.js";
 import {
     BLANK_OK,
     coordinateField,
     dateField,
+    enumField,
     enumFilter,
     idFilter,
     numberField,
@@ -64,7 +67,10 @@ const inspectionFields = () => [
         })
         .withMessage("enter the preferred date for the preferred time"),
 
-    // What the inspector found
+    // What the inspector found. The division and line of business are confirmed on site
+    // and saved on the AIF application, where the fee reads them.
+    enumField("occupancyDivision", OCCUPANCY_DIVISIONS),
+    enumField("businessActivity", BUSINESS_ACTIVITIES),
     numberField("noOfCR"),
     numberField("area"),
     numberField("numOfStorey"),

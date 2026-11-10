@@ -1,6 +1,6 @@
 import { newKey } from "../../utils/newKey";
 import { PiCalculator, PiCheck, PiPlus } from "react-icons/pi";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Form, Link, redirect, useActionData, useLoaderData, useNavigation } from "react-router-dom";
 import { toast } from "react-toastify";
 import { FeeChecklist, FormBox, FormError, RecordPicker } from "../components";
@@ -120,6 +120,8 @@ const AssessmentForm = () => {
     const [computeError, setComputeError] = useState("");
     // Reopens the checklist's sections around what a computation ticked
     const [computeCount, setComputeCount] = useState(0);
+    // Only the latest computation counts, if the record is changed while one is loading
+    const latestCompute = useRef(0);
 
     useEffect(() => {
         if (!recordId) return undefined;
@@ -133,7 +135,7 @@ const AssessmentForm = () => {
     }, [recordId]);
 
     const compute = async () => {
-        setComputeError("");
+        const run = ++latestCompute.current;
         try {
             const { data } = await customFetch.get("/assessments/compute-fees", {
                 params: {
@@ -142,15 +144,27 @@ const AssessmentForm = () => {
                     ...(inspectionId && { inspection: inspectionId }),
                 },
             });
+            if (run !== latestCompute.current) return;
+            setComputeError("");
             const { picks: found, others } = splitComputed(sections, data.fees);
             setPicks(found);
             setLines(others.map(newLine));
             setComputeCount((count) => count + 1);
             setNotes(data.notes);
         } catch (error) {
-            setComputeError(errorMessage(error));
+            if (run === latestCompute.current) setComputeError(errorMessage(error));
         }
     };
+
+    // A new assessment fills itself in as soon as its record (and inspection) is known.
+    // A saved one isn't recomputed on opening, so changes made by hand are kept.
+    useEffect(() => {
+        if (assessment || !recordId) return;
+        // compute only sets state after the server replies, not during the effect
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        compute();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [assessment, recordId, inspectionId, type]);
 
     const updateLine = (key, field, value) =>
         setLines((rows) =>
@@ -254,10 +268,12 @@ const AssessmentForm = () => {
                     <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2">
                         <button type="button" className="btn" onClick={compute} disabled={!recordId}>
                             <PiCalculator />
-                            Compute from schedule of fees
+                            {assessment ? "Compute from schedule of fees" : "Compute again"}
                         </button>
                         <span className="cell-hint !mt-0">
-                            Fills what it can from the {type === "business" ? "inspection" : "permit"}, or tick items yourself.
+                            {assessment
+                                ? `Fills what it can from the ${type === "business" ? "inspection" : "permit"}, replacing the ticks below.`
+                                : `Filled in from the ${type === "business" ? "inspection" : "permit"}. Check it, tick or untick items, then save.`}
                         </span>
                     </div>
                     {computeError && <p className="mb-3 text-sm text-stamp">{computeError}</p>}

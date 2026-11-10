@@ -1,9 +1,11 @@
-import { PiCheck, PiPlus } from "react-icons/pi";
+import { PiCheck } from "react-icons/pi";
 import { useState } from "react";
 import { Form, Link, redirect, useActionData, useLoaderData, useNavigation } from "react-router-dom";
 import { toast } from "react-toastify";
 import { ElectricalFound, ElectronicsChecklist, FieldCell, FormBox, FormError, InputField, MachineryChecklist, RecordPicker, SignsFound, ValueCell } from "../components";
 import { RECORD_TYPES } from "../constants/registers";
+import { DIVISION_HINT_DEFAULT, DIVISION_HINTS } from "../constants/occupancyDivisions";
+import { BUSINESS_ACTIVITIES, OCCUPANCY_DIVISIONS } from "../../../utils/constants.js";
 import { totalFloorArea } from "../../../utils/feeSchedule.js";
 import customFetch from "../../utils/customFetch";
 import { dateInputValue, errorMessage, formatTime, inspectionName, pickerLabel, recordName, withoutEmptyFiles } from "../../utils/format";
@@ -50,6 +52,21 @@ export const action = async ({ request, params }) => {
         return { error: errorMessage(error) };
     }
 };
+
+// Confirmed on site and saved on the AIF application; the area fee depends on the division
+const OCCUPANCY_FIELDS = [
+    {
+        name: "occupancyDivision",
+        label: "Occupancy division",
+        span: 3,
+        type: "select",
+        options: Object.values(OCCUPANCY_DIVISIONS),
+        hints: DIVISION_HINTS,
+        defaultHint: DIVISION_HINT_DEFAULT,
+        required: true,
+    },
+    { name: "businessActivity", label: "Line of business", span: 3, type: "select", options: Object.values(BUSINESS_ACTIVITIES) },
+];
 
 const InspectionForm = () => {
     const { inspection, isInspecting, type: initialType, picked, owner } = useLoaderData();
@@ -183,6 +200,18 @@ const InspectionForm = () => {
                     {isFinishing && <input type="hidden" name="markInspected" value="true" />}
                     <ValueCell field={{ name: "dateOfInspection", label: "Inspection date", span: 3, type: "date" }} record={inspection} />
                     <ValueCell field={{ name: "inspectedBy", label: "Inspector", span: 3, show: (record) => record.inspectedBy?.username }} record={inspection} />
+                </FormBox>
+            )}
+
+            {isInspecting && type === "business" && inspection.record && (
+                <FormBox title="Occupancy">
+                    {OCCUPANCY_FIELDS.map((field) =>
+                        inspection.record.status === "paid" ? (
+                            <ValueCell key={field.name} field={{ ...field, label: `${field.label} (paid, locked)` }} record={inspection.record} />
+                        ) : (
+                            <FieldCell key={field.name} field={field} record={inspection.record} />
+                        ),
+                    )}
                 </FormBox>
             )}
 

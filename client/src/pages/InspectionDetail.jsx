@@ -5,7 +5,7 @@ import { ConfirmDelete, FormBox, FormError, InputField, RecordPicker, Status, Va
 import { RECORD_TYPES } from "../constants/registers";
 import { acUnitsText, ANNUAL_MECHANICAL, conversionText, ELECTRONICS, machineSize, SIGN_RENEWALS, totalFloorArea } from "../../../utils/feeSchedule.js";
 import customFetch from "../../utils/customFetch";
-import { errorMessage, formatDate, formatTime, inspectionName, recordName } from "../../utils/format";
+import { errorMessage, formatDate, formatTime, inspectionName, recordName, sentence } from "../../utils/format";
 
 export const loader = async ({ params }) => {
     const { data } = await customFetch.get(`/inspections/${params.id}`);
@@ -185,6 +185,12 @@ const InspectionDetail = () => {
                         cell("noOfCR", "Plumbing units (toilets)", 2),
                         ...(type === "business"
                             ? [{
+                                ...cell("occupancyDivision", "Occupancy division", 3),
+                                show: ({ record: application }) => application?.occupancyDivision,
+                            }, {
+                                ...cell("businessActivity", "Line of business", 3),
+                                show: ({ record: application }) => sentence(application?.businessActivity || ""),
+                            }, {
                                 ...cell("hasNameSignage", "Signage with the business name", 6),
                                 show: ({ hasNameSignage: has }) => (has === undefined ? "" : has ? "Yes" : "No"),
                             }]
